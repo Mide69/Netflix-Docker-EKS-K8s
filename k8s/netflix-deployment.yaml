@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: netflix-eks
+  labels:
+    app: netflix-eks
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: netflix-eks
+  template:
+    metadata:
+      labels:
+        app: netflix-eks
+    spec:
+      containers:
+      - name: netflix-eks
+        image: tektribe/netflix_eks:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: REACT_APP_TMDB_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: netflix-eks-secret
+              key: tmdb-api-key
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: netflix-eks-service
+spec:
+  selector:
+    app: netflix-eks
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: LoadBalancer
