@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: netflix-clone
+  name: netflix-eks
   labels:
-    app: netflix-clone
+    app: netflix-eks
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: netflix-clone
+      app: netflix-eks
   template:
     metadata:
       labels:
-        app: netflix-clone
+        app: netflix-eks
     spec:
       containers:
-      - name: netflix-clone
+      - name: netflix-eks
         image: tektribe/netflix_eks:latest
         ports:
         - containerPort: 80
@@ -23,16 +23,16 @@ spec:
         - name: REACT_APP_TMDB_API_KEY
           valueFrom:
             secretKeyRef:
-              name: netflix-clone-secret
+              name: netflix-eks-secret
               key: tmdb-api-key
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: netflix-clone-service
+  name: netflix-eks-service
 spec:
   selector:
-    app: netflix-clone
+    app: netflix-eks
   ports:
     - protocol: TCP
       port: 80
