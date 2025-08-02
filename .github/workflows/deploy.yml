@@ -1,0 +1,52 @@
+name: Deploy Netflix EKS App
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  AWS_REGION: us-west-2
+  EKS_CLUSTER_NAME: netflix-clone-eks
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ${{ secrets.DOCKER_USERNAME }}/netflix_eks:${{ github.sha }}
+        build-args: |
+          TMDB_V3_API_KEY=${{ secrets.TMDB_API_KEY }}
+
+    - name: Update kubeconfig
+      run: |
+        aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
+
+    - name: Deploy to EKS
+      run: |
+        sed -i 's|tektribe/netflix_eks:latest|${{ secrets.DOCKER_USERNAME }}/netflix_eks:${{ github.sha }}|g' k8s/netflix-deployment.yaml
+        kubectl apply -f k8s/secret.yaml
+        kubectl apply -f k8s/netflix-deployment.yaml
+        kubectl rollout status deployment/netflix-eks
