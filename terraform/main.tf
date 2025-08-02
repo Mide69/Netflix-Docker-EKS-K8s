@@ -34,10 +34,12 @@ module "vpc" {
 
   public_subnet_tags = {
     "kubernetes.io/role/elb" = 1
+    "kubernetes.io/cluster/${var.cluster_name}" = "owned"
   }
 
   private_subnet_tags = {
     "kubernetes.io/role/internal-elb" = 1
+    "kubernetes.io/cluster/${var.cluster_name}" = "owned"
   }
 }
 
@@ -62,4 +64,15 @@ module "eks" {
       desired_size = 2
     }
   }
+}
+
+module "aws_load_balancer_controller" {
+  source = "terraform-aws-modules/eks/aws//modules/aws-load-balancer-controller"
+
+  cluster_name = module.eks.cluster_name
+  cluster_endpoint = module.eks.cluster_endpoint
+  cluster_version = module.eks.cluster_version
+  oidc_provider_arn = module.eks.oidc_provider_arn
+
+  vpc_id = module.vpc.vpc_id
 }
