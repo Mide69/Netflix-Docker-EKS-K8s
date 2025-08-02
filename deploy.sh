@@ -9,8 +9,12 @@ terraform apply -auto-approve
 # Configure kubectl
 aws eks update-kubeconfig --region $(terraform output -raw region) --name $(terraform output -raw cluster_name)
 
+# Install AWS Load Balancer Controller
+cd ..
+./install-alb-controller.sh
+
 # Deploy application
-cd ../k8s
+cd k8s
 kubectl apply -f secret.yaml
 kubectl apply -f deployment.yaml
 
